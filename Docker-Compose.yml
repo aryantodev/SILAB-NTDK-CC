@@ -1,0 +1,79 @@
+version: '3.8'
+
+services:
+  # ==========================================
+  # 1. DATABASE SERVICE (Simulasi Amazon RDS)
+  # ==========================================
+  db:
+    image: mysql:8.0
+    container_name: silab_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: silab_ntdk
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_USER: silab_user
+      MYSQL_PASSWORD: silab_password
+    ports:
+      - "3307:3306" # <--- SEKARANG BENAR: Port 3307 laptop diteruskan ke port 3306 kontainer
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - silab_network
+
+  # ==========================================
+  # 2. BACKEND SERVICE (Laravel API)
+  # ==========================================
+  backend:
+    build:
+      context: ./silab-laravel
+      dockerfile: Dockerfile
+    container_name: silab_backend
+    restart: always
+    ports:
+      - "8000:8000" # <--- DIKEMBALIKAN KE 8000: Agar Laravel bisa diakses via localhost:8000
+    volumes:
+      - ./silab-laravel:/var/www/html
+    environment:
+      - APP_NAME=SILAB-NTDK
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - APP_URL=http://localhost:8000
+      - DB_CONNECTION=mysql
+      - DB_HOST=db # Tetap 'db' karena menggunakan network internal Docker
+      - DB_PORT=3306 # Di dalam network internal, MySQL kontainer tetap membaca port aslinya (3306)
+      - DB_DATABASE=silab_ntdk
+      - DB_USERNAME=silab_user
+      - DB_PASSWORD=silab_password
+      - FILESYSTEM_DISK=s3
+    depends_on:
+      - db
+    networks:
+      - silab_network
+
+  # ==========================================
+  # 3. FRONTEND SERVICE (React UI)
+  # ==========================================
+  frontend:
+    build:
+      context: ./silab-react
+      dockerfile: Dockerfile
+    container_name: silab_frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./silab-react:/app
+      - /app/node_modules
+    environment:
+      - REACT_APP_API_BASE_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+    networks:
+      - silab_network
+
+volumes:
+  db_data:
+
+networks:
+  silab_network:
+    driver: bridge

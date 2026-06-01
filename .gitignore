@@ -1,0 +1,8 @@
+vendor/
+node_modules/
+.env
+storage/*.key
+database_silab.sql
+.vscode/
+silab-laravel/vendor/
+silab-react/node_modules/
