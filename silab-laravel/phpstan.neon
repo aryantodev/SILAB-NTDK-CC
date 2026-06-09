@@ -1,0 +1,21 @@
+parameters:
+    level: 5
+    paths:
+        - app
+        - routes
+        - tests
+    
+    ignoreErrors:
+        # Laravel Facades adalah dynamic, PHPStan tidak bisa mengenali
+        - '#Call to an undefined method Illuminate\\Support\\Facades\\Storage#'
+        - '#Call to undefined function now#'
+        - '#Call to undefined function config#'
+        - '#Call to undefined function env#'
+        - '#Call to undefined function app#'
+        - '#Call to undefined function response#'
+        - '#Undefined property Illuminate\\Http#'
+        
+        # Laravel Collections
+        - '#Method Illuminate\\Support\\Collection::#'
+        
+    reportUnmatchedIgnoredErrors: false

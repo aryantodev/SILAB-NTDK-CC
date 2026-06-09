@@ -1,0 +1,72 @@
+# Auto detect text files and normalize line endings to LF
+* text=auto
+
+# PHP files
+*.php text eol=lf
+*.phtml text eol=lf
+
+# Composer, NPM, Yarn
+composer.json text eol=lf
+composer.lock text eol=lf
+package.json text eol=lf
+package-lock.json text eol=lf
+yarn.lock text eol=lf
+
+# Configuration files
+*.env text eol=lf
+*.env.* text eol=lf
+*.conf text eol=lf
+*.config text eol=lf
+.editorconfig text eol=lf
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# Bash/Shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+Dockerfile* text eol=lf
+docker-compose.yml text eol=lf
+
+# JavaScript/TypeScript
+*.js text eol=lf
+*.jsx text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.json text eol=lf
+
+# CSS/SASS
+*.css text eol=lf
+*.scss text eol=lf
+*.sass text eol=lf
+*.less text eol=lf
+
+# Markdown
+*.md text eol=lf
+*.markdown text eol=lf
+
+# YAML
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# XML
+*.xml text eol=lf
+
+# SQL
+*.sql text eol=lf
+
+# Binary files
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.ico binary
+*.mov binary
+*.mp4 binary
+*.mp3 binary
+*.gz binary
+*.zip binary
+*.7z binary
+*.ttf binary
+*.otf binary
+*.pem binary
+*.key binary

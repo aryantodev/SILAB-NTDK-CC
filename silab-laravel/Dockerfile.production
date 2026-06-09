@@ -1,0 +1,86 @@
+# Stage 1: Builder - Install dependencies
+FROM php:8.2-fpm-alpine as builder
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache \
+    git \
+    curl \
+    libzip-dev \
+    oniguruma-dev \
+    && docker-php-ext-install -j$(nproc) \
+        pdo_mysql \
+        zip \
+        bcmath \
+        mbstring \
+        json \
+        curl
+
+# Install Composer
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Copy composer files
+COPY composer.json composer.lock ./
+
+# Install PHP dependencies (production)
+RUN composer install \
+    --no-interaction \
+    --no-dev \
+    --optimize-autoloader \
+    --no-scripts
+
+---
+
+# Stage 2: Runtime - Production image
+FROM php:8.2-fpm-alpine
+
+WORKDIR /app
+
+# Install system dependencies (runtime only)
+RUN apk add --no-cache \
+    nginx \
+    curl \
+    libzip \
+    oniguruma \
+    && rm -rf /var/cache/apk/*
+
+# Install PHP extensions
+RUN docker-php-ext-install -j$(nproc) \
+    pdo_mysql \
+    zip \
+    bcmath \
+    mbstring \
+    json \
+    curl
+
+# Copy PHP configuration
+COPY ./docker/php/php.ini /usr/local/etc/php/php.ini
+COPY ./docker/php/php-fpm.conf /usr/local/etc/php-fpm.d/www.conf
+
+# Copy Nginx configuration
+COPY ./docker/nginx/nginx.conf /etc/nginx/nginx.conf
+COPY ./docker/nginx/default.conf /etc/nginx/http.d/default.conf
+
+# Copy application files
+COPY . .
+
+# Copy composer vendors from builder
+COPY --from=builder /app/vendor /app/vendor
+
+# Create necessary directories
+RUN mkdir -p /app/storage/logs \
+    && mkdir -p /app/bootstrap/cache \
+    && chown -R www-data:www-data /app \
+    && chmod -R 755 /app/storage \
+    && chmod -R 755 /app/bootstrap/cache
+
+# Expose port
+EXPOSE 9000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost/health || exit 1
+
+# Start both PHP-FPM and Nginx
+CMD sh -c "php-fpm -D && nginx -g 'daemon off;'"
