@@ -1,9 +1,4 @@
-version: '3.8'
-
 services:
-  # ==========================================
-  # 1. DATABASE SERVICE (Simulasi Amazon RDS)
-  # ==========================================
   db:
     image: mysql:8.0
     container_name: silab_db
@@ -14,15 +9,12 @@ services:
       MYSQL_USER: silab_user
       MYSQL_PASSWORD: silab_password
     ports:
-      - "3307:3306" # <--- SEKARANG BENAR: Port 3307 laptop diteruskan ke port 3306 kontainer
+      - "3307:3306"
     volumes:
       - db_data:/var/lib/mysql
     networks:
       - silab_network
 
-  # ==========================================
-  # 2. BACKEND SERVICE (Laravel API)
-  # ==========================================
   backend:
     build:
       context: ./silab-laravel
@@ -30,7 +22,7 @@ services:
     container_name: silab_backend
     restart: always
     ports:
-      - "8000:8000" # <--- DIKEMBALIKAN KE 8000: Agar Laravel bisa diakses via localhost:8000
+      - "8000:8000"
     volumes:
       - ./silab-laravel:/var/www/html
     environment:
@@ -39,8 +31,8 @@ services:
       - APP_DEBUG=true
       - APP_URL=http://localhost:8000
       - DB_CONNECTION=mysql
-      - DB_HOST=db # Tetap 'db' karena menggunakan network internal Docker
-      - DB_PORT=3306 # Di dalam network internal, MySQL kontainer tetap membaca port aslinya (3306)
+      - DB_HOST=db
+      - DB_PORT=3306
       - DB_DATABASE=silab_ntdk
       - DB_USERNAME=silab_user
       - DB_PASSWORD=silab_password
@@ -50,9 +42,6 @@ services:
     networks:
       - silab_network
 
-  # ==========================================
-  # 3. FRONTEND SERVICE (React UI)
-  # ==========================================
   frontend:
     build:
       context: ./silab-react
@@ -63,9 +52,8 @@ services:
       - "3000:3000"
     volumes:
       - ./silab-react:/app
-      - /app/node_modules
     environment:
-      - REACT_APP_API_BASE_URL=http://localhost:8000/api
+      - REACT_APP_API_BASE_URL=http://52.77.226.138:8000/api
     depends_on:
       - backend
     networks:

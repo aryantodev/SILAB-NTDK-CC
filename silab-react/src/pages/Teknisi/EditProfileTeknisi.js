@@ -45,7 +45,7 @@ function EditProfileTeknisi() {
     }
 
     axios
-      .get("http://localhost:8000/api/me", {
+      .get("http://52.77.226.138:8000/api/me", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -72,7 +72,7 @@ function EditProfileTeknisi() {
         if (user.avatar_url) {
           setPreviewAvatar(user.avatar_url);
         } else if (user.avatar) {
-          setPreviewAvatar(`http://localhost:8000/storage/${user.avatar}`);
+          setPreviewAvatar(`http://52.77.226.138:8000/storage/${user.avatar}`);
         }
       })
       .catch((err) => {
@@ -131,7 +131,7 @@ function EditProfileTeknisi() {
     }
 
     try {
-      const response = await axios.post("http://localhost:8000/api/profile/update", dataToSend, {
+      const response = await axios.post("http://52.77.226.138:8000/api/profile/update", dataToSend, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "multipart/form-data",

@@ -16,8 +16,8 @@ function NavbarLogin({ children }) {
   const [notifications, setNotifications] = useState([]);
   const [notifCount, setNotifCount] = useState(0);
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
+  const [showLogout, setShowLogout] = useState(false);
 
-  // 1. Ambil User dari LocalStorage
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser) {
@@ -25,18 +25,12 @@ function NavbarLogin({ children }) {
     }
   }, []);
 
-  // 2. Fetch notifications dengan polling
   const fetchNotifications = async () => {
     try {
-      // Ambil semua notifikasi (untuk menampilkan read + unread)
       const allResp = await getAllNotifications(1, 50);
-      // allResp.data adalah paginator dari backend; array notifikasinya ada di allResp.data.data
       const allData = allResp && allResp.data && allResp.data.data ? allResp.data.data : [];
-
-      // Ambil jumlah unread untuk badge
       const unreadResp = await getUnreadNotifications();
       const unreadCount = unreadResp && unreadResp.count ? unreadResp.count : 0;
-
       setNotifications(allData || []);
       setNotifCount(unreadCount);
     } catch (error) {
@@ -45,23 +39,17 @@ function NavbarLogin({ children }) {
   };
 
   useEffect(() => {
-    fetchNotifications(); // Initial fetch
-    const interval = setInterval(fetchNotifications, 30000); // Poll setiap 30 detik
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const handleNotificationClick = async (notif) => {
     try {
       await markNotificationAsRead(notif.id);
-
-      // Update local state immediately so the message remains visible
       setNotifications((prev) => prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)));
       setNotifCount((c) => Math.max(0, c - 1));
-
-      // Optionally refresh in background but don't rely on it for immediate UI
       fetchNotifications().catch((e) => console.error("Background fetch error:", e));
-
-      // Navigate to relevant page
       if (notif.booking_id) {
         history.push("/dashboard/prosesAnalisis");
       }
@@ -79,45 +67,20 @@ function NavbarLogin({ children }) {
     }
   };
 
-  const [showLogout, setShowLogout] = useState(false);
-
-  // ============================================================
-  // 🔥 FITUR PROTEKSI: PAKSA LENGKAPI PROFIL 🔥
-  // ============================================================
   useEffect(() => {
     const checkProfileCompletion = () => {
       const storedUser = JSON.parse(localStorage.getItem("user"));
-
       if (storedUser) {
-        // Cek apakah data wajib sudah terisi?
-        // Kita anggap belum lengkap jika full_name atau institusi masih kosong/null
         const isProfileIncomplete = !storedUser.full_name || !storedUser.institusi;
-
-        // Halaman yang BOLEH diakses walau profil belum lengkap
-        // (Hanya halaman Edit Profil yang diizinkan)
-        // Sesuaikan string ini dengan URL Route di App.js Anda untuk Edit Profil
         const editProfilePath = "ProfileAkunKlien/EditProfileKlien";
-
-        // Cek apakah user sedang berada di halaman edit profil?
         const isCurrentlyOnEditPage = location.pathname.includes(editProfilePath);
-
-        // LOGIKA UTAMA:
-        // Jika Profil Belum Lengkap DAN User BUKAN di halaman edit profil
         if (isProfileIncomplete && !isCurrentlyOnEditPage) {
-          // Paksa pindah ke halaman Edit Profil
-          // Pastikan path ini sesuai dengan Route Anda
           history.replace("/dashboard/ProfileAkunKlien/EditProfileKlien");
-
-          // Opsional: Tampilkan alert sekali saja (bisa pakai toastr/swal agar lebih bagus)
-          // alert("Mohon lengkapi Nama Lengkap dan Institusi Anda terlebih dahulu.");
         }
       }
     };
-
-    // Jalankan pengecekan setiap kali URL berubah
     checkProfileCompletion();
   }, [location.pathname, history]);
-  // ============================================================
 
   const menus = [
     { key: "dashboard", label: "Dashboard", icon: <FaTachometerAlt /> },
@@ -131,7 +94,6 @@ function NavbarLogin({ children }) {
     { key: "riwayatAnalisisKlien", label: "Riwayat", icon: <FaHistory /> },
   ];
 
-  // sinkronkan activeMenu berdasarkan URL
   useEffect(() => {
     const path = location.pathname.replace("/dashboard/", "");
     const found = menus.find((m) => path.startsWith(m.key));
@@ -140,9 +102,7 @@ function NavbarLogin({ children }) {
     }
   }, [location.pathname]);
 
-  const currentTitle = (() => {
-    return menus.find((m) => m.key === activeMenu)?.label;
-  })();
+  const currentTitle = menus.find((m) => m.key === activeMenu)?.label;
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -150,196 +110,88 @@ function NavbarLogin({ children }) {
     history.push("/LandingPage");
   };
 
-  const avatarSrc = user?.avatar ? (user.avatar.startsWith("http") || user.avatar.startsWith("blob") ? user.avatar : `http://localhost:8000/storage/${user.avatar}`) : null;
+  // LOGIKA AVATAR ASLI (Hanya diperbaiki IP-nya ke IP Publik agar gambar muncul)
+  const avatarSrc = user?.avatar 
+    ? (user.avatar.startsWith("http") || user.avatar.startsWith("blob") 
+      ? user.avatar 
+      : `http://52.77.226.138:8000/storage/${user.avatar}`) 
+    : null;
 
   return (
     <div className="dashboard-layout" style={{ fontFamily: "Poppins, sans-serif" }}>
-      {/* Header */}
       <header className="dashboard-header d-flex justify-content-between align-items-center px-4 py-2 shadow-sm bg-white border-bottom sticky-top">
-        {/* Bagian Kiri: Burger Menu & Logo */}
         <div className="d-flex align-items-center">
           <button className="btn btn-light border-0 me-3 d-lg-none rounded-circle" onClick={() => setSidebarOpen(!sidebarOpen)} aria-label="Toggle sidebar">
             {sidebarOpen ? <FaTimes size={22} className="text-secondary" /> : <FaBars size={20} className="text-secondary" />}
           </button>
-
           <div className="d-flex align-items-center gap-3">
             <Image src="/asset/gambarLogo.png" alt="IPB Logo" style={{ width: "120px", height: "auto" }} />
             <div className="vr d-none d-md-block mx-2 text-muted opacity-25" style={{ height: "30px" }}></div>
             <div className="d-none d-md-flex flex-column justify-content-center">
-              <span className="fw-bold text-dark mb-0" style={{ fontSize: "0.85rem", lineHeight: "1.2" }}>
-                Sistem Informasi Laboratorium
-              </span>
-              <span className="text-muted" style={{ fontSize: "0.75rem" }}>
-                Nutrisi Ternak Daging Dan Kerja
-              </span>
+              <span className="fw-bold text-dark mb-0" style={{ fontSize: "0.85rem", lineHeight: "1.2" }}>Sistem Informasi Laboratorium</span>
+              <span className="text-muted" style={{ fontSize: "0.75rem" }}>Nutrisi Ternak Daging Dan Kerja</span>
             </div>
           </div>
         </div>
 
-        {/* Bagian Kanan: Notifikasi & User */}
         <div className="d-flex align-items-center gap-2">
-          {/* Notification Dropdown */}
           <Dropdown show={showNotifDropdown} onToggle={(isOpen) => setShowNotifDropdown(isOpen)} align="end">
             <Dropdown.Toggle variant="light" className="border-0 bg-transparent position-relative p-2 rounded-circle" style={{ width: "40px", height: "40px" }}>
               <FaBell size={18} className="text-secondary" />
-              {notifCount > 0 && (
-                <Badge
-                  bg="danger"
-                  pill
-                  className="position-absolute border border-white"
-                  style={{
-                    top: "4px",
-                    right: "4px",
-                    fontSize: "0.6rem",
-                    padding: "3px 5px",
-                  }}
-                >
-                  {notifCount}
-                </Badge>
-              )}
+              {notifCount > 0 && <Badge bg="danger" pill className="position-absolute border border-white" style={{ top: "4px", right: "4px", fontSize: "0.6rem" }}>{notifCount}</Badge>}
             </Dropdown.Toggle>
-
-            <Dropdown.Menu className="shadow-lg border-0 mt-2" style={{ width: "320px", borderRadius: "12px", overflow: "hidden" }}>
+            <Dropdown.Menu className="shadow-lg border-0 mt-2" style={{ width: "320px", borderRadius: "12px" }}>
               <div className="d-flex justify-content-between align-items-center px-3 py-3 bg-light">
                 <h6 className="mb-0 fw-bold">Notifikasi</h6>
-                {notifCount > 0 && (
-                  <button className="btn btn-sm btn-link text-decoration-none p-0 fw-semibold" onClick={handleMarkAllAsRead}>
-                    Tandai Semua
-                  </button>
-                )}
+                {notifCount > 0 && <button className="btn btn-sm btn-link text-decoration-none p-0 fw-semibold" onClick={handleMarkAllAsRead}>Tandai Semua</button>}
               </div>
-
               <div style={{ maxHeight: "350px", overflowY: "auto" }}>
-                {notifications.length === 0 ? (
-                  <div className="text-center text-muted py-5">
-                    <FaBell size={30} className="mb-2 opacity-25" />
-                    <p className="small mb-0">Tidak ada notifikasi baru</p>
-                  </div>
-                ) : (
-                  notifications.map((notif) => (
-                    <Dropdown.Item
-                      key={notif.id}
-                      onClick={() => handleNotificationClick(notif)}
-                      className="py-3 px-3 border-bottom"
-                      style={{
-                        whiteSpace: "normal",
-                        backgroundColor: notif.is_read ? "#ffffff" : "#f0f7ff",
-                      }}
-                    >
-                      <div className="d-flex flex-column gap-1">
-                        <div className={`small fw-bold ${notif.is_read ? "text-secondary" : "text-dark"}`}>{notif.title}</div>
-                        <div className="text-muted" style={{ fontSize: "0.8rem", lineHeight: "1.4" }}>
-                          {notif.message}
-                        </div>
-                        <div className="text-uppercase fw-medium" style={{ fontSize: "0.65rem", color: "#adb5bd" }}>
-                          {new Date(notif.created_at).toLocaleString("id-ID", { dateStyle: "medium", timeStyle: "short" })}
-                        </div>
-                      </div>
-                    </Dropdown.Item>
-                  ))
-                )}
+                {notifications.map((notif) => (
+                  <Dropdown.Item key={notif.id} onClick={() => handleNotificationClick(notif)} className="py-3 px-3 border-bottom">{notif.title}</Dropdown.Item>
+                ))}
               </div>
             </Dropdown.Menu>
           </Dropdown>
 
-          {/* User Profile Dropdown */}
           <Dropdown align="end">
-            <Dropdown.Toggle variant="light" className="d-flex align-items-center border-0 bg-light rounded-pill px-3 py-1 gap-2" style={{ transition: "0.3s" }}>
+            <Dropdown.Toggle variant="light" className="d-flex align-items-center border-0 bg-light rounded-pill px-3 py-1 gap-2">
               {avatarSrc ? <Image src={avatarSrc} roundedCircle width={28} height={28} style={{ objectFit: "cover" }} /> : <FaUserCircle size={24} className="text-primary" />}
-              <span className="fw-semibold d-none d-md-inline" style={{ fontSize: "0.85rem" }}>
-                {user?.name || "User"}
-              </span>
+              <span className="fw-semibold d-none d-md-inline" style={{ fontSize: "0.85rem" }}>{user?.name || "User"}</span>
             </Dropdown.Toggle>
-
             <Dropdown.Menu className="shadow-lg border-0 mt-2" style={{ borderRadius: "10px" }}>
-              <Dropdown.Item className="py-2" onClick={() => history.push("/dashboard/ProfileAkunKlien")}>
-                <i className="bi bi-person me-2"></i> Profil Akun
-              </Dropdown.Item>
-              <hr className="dropdown-divider opacity-50" />
-              <Dropdown.Item className="py-2 text-danger" onClick={() => setShowLogout(true)}>
-                <i className="bi bi-box-arrow-right me-2"></i> Logout
-              </Dropdown.Item>
+              <Dropdown.Item onClick={() => history.push("/dashboard/ProfileAkunKlien")}>Profil Akun</Dropdown.Item>
+              <Dropdown.Item className="text-danger" onClick={() => setShowLogout(true)}>Logout</Dropdown.Item>
             </Dropdown.Menu>
           </Dropdown>
         </div>
       </header>
 
-      {/* Sidebar */}
       <aside className={`dashboard-sidebar bg-white p-3 shadow-sm ${sidebarOpen ? "open" : ""}`}>
         <Nav className="flex-column mt-2">
           {menus.map((menu) => (
-            <Nav.Link
-              key={menu.key}
-              onClick={() => {
-                // Walau user klik menu, useEffect proteksi di atas akan tetap mencegatnya
-                // jika profil belum lengkap
-                setActiveMenu(menu.key);
-                history.push(`/dashboard/${menu.key}`);
-                setSidebarOpen(false);
-              }}
-              className={`d-flex align-items-center mb-2 py-2 px-3 rounded ${activeMenu === menu.key ? "active" : ""}`}
-              style={{
-                color: "#000",
-                fontSize: "0.95rem",
-                transition: "background 0.3s, color 0.3s",
-                cursor: "pointer",
-              }}
-            >
-              <span className="me-3" style={{ fontSize: "1.1rem" }}>
-                {menu.icon}
-              </span>
-              {menu.label}
+            <Nav.Link key={menu.key} onClick={() => { setActiveMenu(menu.key); history.push(`/dashboard/${menu.key}`); setSidebarOpen(false); }} className={`d-flex align-items-center mb-2 py-2 px-3 rounded ${activeMenu === menu.key ? "active" : ""}`}>
+              <span className="me-3">{menu.icon}</span>{menu.label}
             </Nav.Link>
           ))}
         </Nav>
       </aside>
 
-      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
-
-      {/* Konten */}
       <main className="dashboard-content">
-        <div className="page-title-bar">
-          <h5 className="m-0 px-4 py-2">{currentTitle}</h5>
-        </div>
-
+        <div className="page-title-bar"><h5 className="m-0 px-4 py-2">{currentTitle}</h5></div>
         <div className="dashboard-inner">{children}</div>
       </main>
 
-      {/* CSS */}
       <style>{`
         .dashboard-layout { display: flex; min-height: 100vh; flex-direction: column; }
-        .dashboard-header { position: fixed; top: 0; left: 0; right: 0; height: 70px; z-index: 1060; background: #fff; display: flex; align-items: center; }
-        .dashboard-sidebar { width: 240px; position: fixed; top: 70px; left: 0; height: calc(100vh - 70px); overflow-y: auto; transform: translateX(-100%); transition: transform 0.3s ease; z-index: 1055; border-right: 1px solid #e5e5e5; background: #fff; }
+        .dashboard-header { position: fixed; top: 0; left: 0; right: 0; height: 70px; z-index: 1060; background: #fff; }
+        .dashboard-sidebar { width: 240px; position: fixed; top: 70px; left: 0; height: calc(100vh - 70px); overflow-y: auto; transform: translateX(-100%); transition: transform 0.3s; z-index: 1055; }
         .dashboard-sidebar.open { transform: translateX(0); }
-        .dashboard-sidebar .nav-link.active { background-color: #f0f0f0; font-weight: 600; }
-        .dashboard-content { flex: 1; background-color: #fafafa; min-height: calc(100vh - 70px); margin-top: 70px; margin-left: 0; padding: 0 !important; transition: margin-left 0.3s ease; }
-        .dashboard-inner { padding: 0 !important; margin: 0 !important; }
-        .page-title-bar { background-color: #a6867b; color: #fff; font-weight: 500; font-size: 1.25rem; letter-spacing: 0.5px; box-shadow: 0 -4px 8px rgba(0,0,0,0.25) inset; border-bottom-left-radius: 30px; border-bottom-right-radius:30px; }
-        .sidebar-overlay { position: fixed; top: 70px; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.4); z-index: 1050; }
-        .subtitle-text { font-size: 0.8rem; white-space: normal; }
-
-        @media (min-width: 992px) {
-          .dashboard-sidebar { transform: translateX(0); }
-          .dashboard-content { margin-left: 240px; margin-top: 70px; }
-        }
-
-        @media (max-width: 991.98px) {
-          .dashboard-sidebar { padding-top: 1rem; width: 75%; max-width: 260px; box-shadow: 2px 0 8px rgba(0,0,0,0.15); }
-          .dashboard-header img { width: 120px; }
-          .dashboard-header .subtitle-text { font-size: 0.4rem !important; white-space: nowrap !important; text-overflow: ellipsis; max-width: 180px; }
-          .dashboard-sidebar .nav-link { font-size: 0.9rem; }
-        }
+        .dashboard-content { flex: 1; margin-top: 70px; }
+        .page-title-bar { background-color: #a6867b; color: #fff; border-bottom-left-radius: 30px; border-bottom-right-radius: 30px; }
+        @media (min-width: 992px) { .dashboard-sidebar { transform: translateX(0); } .dashboard-content { margin-left: 240px; } }
       `}</style>
-      <ConfirmModal
-        show={showLogout}
-        title="Konfirmasi Logout"
-        message="Anda yakin ingin keluar dari akun?"
-        onConfirm={() => {
-          handleLogout();
-          setShowLogout(false);
-        }}
-        onCancel={() => setShowLogout(false)}
-      />
+
+      <ConfirmModal show={showLogout} title="Konfirmasi Logout" message="Anda yakin ingin keluar?" onConfirm={() => { handleLogout(); setShowLogout(false); }} onCancel={() => setShowLogout(false)} />
     </div>
   );
 }

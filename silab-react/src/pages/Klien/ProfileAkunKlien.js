@@ -32,7 +32,7 @@ function ProfileAkunKlien() {
     }
 
     axios
-      .get("http://localhost:8000/api/me", {
+      .get("http://52.77.226.138:8000/api/me", {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => {
@@ -83,7 +83,7 @@ function ProfileAkunKlien() {
     return null;
   }
 
-  const avatarUrl = user.avatar ? `http://localhost:8000/storage/${user.avatar}` : null;
+  const avatarUrl = user.avatar ? `http://52.77.226.138:8000/storage/${user.avatar}` : null;
 
   return (
     <>

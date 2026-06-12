@@ -63,7 +63,7 @@ function NavbarProfileKepala({ user }) {
 
   const [showLogout, setShowLogout] = useState(false);
 
-  const avatarSrc = user?.avatar ? (user.avatar.startsWith("http") || user.avatar.startsWith("blob") ? user.avatar : `http://localhost:8000/storage/${user.avatar}`) : null;
+  const avatarSrc = user?.avatar ? (user.avatar.startsWith("http") || user.avatar.startsWith("blob") ? user.avatar : `http://52.77.226.138:8000/storage/${user.avatar}`) : null;
 
   return (
     <>

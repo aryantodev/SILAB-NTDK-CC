@@ -5,7 +5,8 @@ return [
     'allowed_methods' => ['*'],
 
     // Kode ini akan membaca domain silabntdk.com dari dashboard Coolify
-    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'https://silabntdk.com')),
+    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'https://silabntdk.com','http://52.77.226.138:3000',
+    'http://52.77.226.138')),
 
     'allowed_origins_patterns' => [],
     'allowed_headers' => ['*'],
