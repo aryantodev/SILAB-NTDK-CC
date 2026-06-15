@@ -64,7 +64,20 @@ function NavbarProfile({ user }) {
 
   const [showLogout, setShowLogout] = useState(false);
 
-  const avatarSrc = user?.avatar ? (user.avatar.startsWith("http") || user.avatar.startsWith("blob") ? user.avatar : `http://52.77.226.138:8000/storage/${user.avatar}`) : null;
+  const avatarSrc = (() => {
+    if (!user) return null;
+
+    // Prefer URL langsung dari backend
+    if (user.avatar_url) return user.avatar_url;
+
+    // Fallback jika avatar sudah berupa full URL
+    if (user.avatar && (user.avatar.startsWith("http") || user.avatar.startsWith("blob"))) return user.avatar;
+
+    // Fallback jika avatar berupa key S3
+    if (user.avatar) return `https://silab-ntdk-storage.ap-southeast-1.amazonaws.com/${user.avatar}`;
+
+    return null;
+  })();
 
   return (
     <>

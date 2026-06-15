@@ -83,7 +83,8 @@ function ProfileAkunKlien() {
     return null;
   }
 
-  const avatarUrl = user.avatar ? `http://52.77.226.138:8000/storage/${user.avatar}` : null;
+  // Gunakan avatar_url jika ada (URL S3 public dari backend), fallback ke key S3
+  const avatarUrl = user?.avatar_url ? user.avatar_url : user?.avatar ? `https://silab-ntdk-storage.ap-southeast-1.amazonaws.com/${user.avatar}` : null;
 
   return (
     <>
@@ -206,3 +207,4 @@ function ProfileAkunKlien() {
 }
 
 export default ProfileAkunKlien;
+

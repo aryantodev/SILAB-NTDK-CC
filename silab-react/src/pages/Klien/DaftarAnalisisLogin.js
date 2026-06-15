@@ -6,10 +6,13 @@ import "@fontsource/poppins/600.css";
 import "@fontsource/poppins/700.css";
 import NavbarLogin from "./NavbarLoginKlien";
 import FooterSetelahLogin from "../FooterSetelahLogin";
-import BrownSpinner from "../../components/Common/LoadingSpinner"; // ⬅️ spinner custom
+import BrownSpinner from "../../components/Common/LoadingSpinner";
 import axios from "axios";
 
 function DaftarAnalisisLogin() {
+  // S3 Base URL (Pastikan ini sesuai dengan folder DaftarAnalisis di S3 Anda)
+  const S3_BASE_URL = "https://silab-ntdk-assets.s3.ap-southeast-1.amazonaws.com/DaftarAnalisis";
+
   useEffect(() => {
     document.title = "SILAB-NTDK - Daftar Analisis";
   }, []);
@@ -31,6 +34,12 @@ function DaftarAnalisisLogin() {
       });
   }, []);
 
+  // Fungsi pembantu untuk membuat nama file dari nama analisis
+  const getS3ImageUrl = (name) => {
+    const formatted = name.toString().replace(/\s+/g, "_").replace(/[^\w_]/g, "");
+    return `${S3_BASE_URL}/${formatted}.png`;
+  };
+
   const CardAnalisis = ({ item, kategori }) => (
     <Col xs={12} sm={6} lg={3}>
       <Card
@@ -43,7 +52,7 @@ function DaftarAnalisisLogin() {
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.transform = "translateY(-8px)";
-          e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.1)";
+          e.currentTarget.style.boxShadow = "0 12px 24px rgba(0,0,0,0.15)";
         }}
         onMouseLeave={(e) => {
           e.currentTarget.style.transform = "translateY(0)";
@@ -53,13 +62,19 @@ function DaftarAnalisisLogin() {
         <div style={{ position: "relative" }}>
           <Card.Img
             variant="top"
-            src={`/asset/daftarAnalisis/${(item.jenis_analisis || item.nama).replace(/\s+/g, "_").replace(/[^\w_]/g, "")}.png`}
+            src={getS3ImageUrl(item.jenis_analisis || item.nama)}
             onError={(e) => {
-              e.target.src = "/asset/daftarAnalisis/Spektro.jpg";
+              e.target.onerror = null;
+              e.target.src = `${S3_BASE_URL}/Spektro.jpg`;
             }}
             style={{ height: "180px", objectFit: "cover" }}
           />
-          <Badge bg="light" text="dark" className="position-absolute top-0 end-0 m-3 shadow-sm" style={{ borderRadius: "8px", fontWeight: "500", opacity: "0.9" }}>
+          <Badge 
+            bg="light" 
+            text="dark" 
+            className="position-absolute top-0 end-0 m-3 shadow-sm" 
+            style={{ borderRadius: "8px", fontWeight: "500", opacity: "0.9" }}
+          >
             {kategori}
           </Badge>
         </div>
@@ -78,7 +93,7 @@ function DaftarAnalisisLogin() {
 
           <Card.Text
             style={{
-              color: "#8D6E63",
+              color: "#8D6E63", // Warna espresso/mocha
               fontSize: "1.15rem",
               fontWeight: "600",
             }}
@@ -100,23 +115,13 @@ function DaftarAnalisisLogin() {
           <p className="text-muted">Pilih jenis analisis laboratorium yang Anda butuhkan</p>
         </div>
 
-        {/* LOADING */}
         {loading ? (
-          <div
-            style={{
-              minHeight: "500px",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "center",
-            }}
-          >
+          <div style={{ minHeight: "500px", display: "flex", justifyContent: "center", alignItems: "center" }}>
             <BrownSpinner />
           </div>
         ) : error ? (
-          /* ERROR */
           <div className="text-center text-danger py-5">{error}</div>
         ) : (
-          /* DATA */
           Object.entries(dataAnalisis).map(([kategori, items]) => (
             <div key={kategori} className="mb-5">
               <div className="d-flex align-items-center mb-4">
@@ -143,7 +148,6 @@ function DaftarAnalisisLogin() {
           ))
         )}
       </Container>
-
       <FooterSetelahLogin />
     </NavbarLogin>
   );

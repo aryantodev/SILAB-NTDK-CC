@@ -110,12 +110,22 @@ function NavbarLogin({ children }) {
     history.push("/LandingPage");
   };
 
-  // LOGIKA AVATAR ASLI (Hanya diperbaiki IP-nya ke IP Publik agar gambar muncul)
-  const avatarSrc = user?.avatar 
-    ? (user.avatar.startsWith("http") || user.avatar.startsWith("blob") 
-      ? user.avatar 
-      : `http://52.77.226.138:8000/storage/${user.avatar}`) 
-    : null;
+  // Avatar source (prioritas: avatar_url dari backend -> fallback key S3 -> fallback full url)
+  const avatarSrc = (() => {
+    if (!user) return null;
+
+    // Backend /login mengirim avatar_url (full URL S3)
+    if (user.avatar_url) return user.avatar_url;
+
+    // Jika avatar sudah berupa full URL / blob
+    if (user.avatar && (user.avatar.startsWith("http") || user.avatar.startsWith("blob"))) return user.avatar;
+
+    // Jika avatar berupa key path S3 (mis. avatars/xxx.jpg)
+    // Host S3 pada backend saat ini: https://{bucket}.s3.{region}.amazonaws.com/{key}
+    if (user.avatar) return `https://silab-ntdk-storage.ap-southeast-1.amazonaws.com/${user.avatar}`;
+
+    return null;
+  })();
 
   return (
     <div className="dashboard-layout" style={{ fontFamily: "Poppins, sans-serif" }}>
@@ -128,8 +138,12 @@ function NavbarLogin({ children }) {
             <Image src="/asset/gambarLogo.png" alt="IPB Logo" style={{ width: "120px", height: "auto" }} />
             <div className="vr d-none d-md-block mx-2 text-muted opacity-25" style={{ height: "30px" }}></div>
             <div className="d-none d-md-flex flex-column justify-content-center">
-              <span className="fw-bold text-dark mb-0" style={{ fontSize: "0.85rem", lineHeight: "1.2" }}>Sistem Informasi Laboratorium</span>
-              <span className="text-muted" style={{ fontSize: "0.75rem" }}>Nutrisi Ternak Daging Dan Kerja</span>
+              <span className="fw-bold text-dark mb-0" style={{ fontSize: "0.85rem", lineHeight: "1.2" }}>
+                Sistem Informasi Laboratorium
+              </span>
+              <span className="text-muted" style={{ fontSize: "0.75rem" }}>
+                Nutrisi Ternak Daging Dan Kerja
+              </span>
             </div>
           </div>
         </div>
@@ -138,16 +152,26 @@ function NavbarLogin({ children }) {
           <Dropdown show={showNotifDropdown} onToggle={(isOpen) => setShowNotifDropdown(isOpen)} align="end">
             <Dropdown.Toggle variant="light" className="border-0 bg-transparent position-relative p-2 rounded-circle" style={{ width: "40px", height: "40px" }}>
               <FaBell size={18} className="text-secondary" />
-              {notifCount > 0 && <Badge bg="danger" pill className="position-absolute border border-white" style={{ top: "4px", right: "4px", fontSize: "0.6rem" }}>{notifCount}</Badge>}
+              {notifCount > 0 && (
+                <Badge bg="danger" pill className="position-absolute border border-white" style={{ top: "4px", right: "4px", fontSize: "0.6rem" }}>
+                  {notifCount}
+                </Badge>
+              )}
             </Dropdown.Toggle>
             <Dropdown.Menu className="shadow-lg border-0 mt-2" style={{ width: "320px", borderRadius: "12px" }}>
               <div className="d-flex justify-content-between align-items-center px-3 py-3 bg-light">
                 <h6 className="mb-0 fw-bold">Notifikasi</h6>
-                {notifCount > 0 && <button className="btn btn-sm btn-link text-decoration-none p-0 fw-semibold" onClick={handleMarkAllAsRead}>Tandai Semua</button>}
+                {notifCount > 0 && (
+                  <button className="btn btn-sm btn-link text-decoration-none p-0 fw-semibold" onClick={handleMarkAllAsRead}>
+                    Tandai Semua
+                  </button>
+                )}
               </div>
               <div style={{ maxHeight: "350px", overflowY: "auto" }}>
                 {notifications.map((notif) => (
-                  <Dropdown.Item key={notif.id} onClick={() => handleNotificationClick(notif)} className="py-3 px-3 border-bottom">{notif.title}</Dropdown.Item>
+                  <Dropdown.Item key={notif.id} onClick={() => handleNotificationClick(notif)} className="py-3 px-3 border-bottom">
+                    {notif.title}
+                  </Dropdown.Item>
                 ))}
               </div>
             </Dropdown.Menu>
@@ -156,11 +180,18 @@ function NavbarLogin({ children }) {
           <Dropdown align="end">
             <Dropdown.Toggle variant="light" className="d-flex align-items-center border-0 bg-light rounded-pill px-3 py-1 gap-2">
               {avatarSrc ? <Image src={avatarSrc} roundedCircle width={28} height={28} style={{ objectFit: "cover" }} /> : <FaUserCircle size={24} className="text-primary" />}
-              <span className="fw-semibold d-none d-md-inline" style={{ fontSize: "0.85rem" }}>{user?.name || "User"}</span>
+              <span className="fw-semibold d-none d-md-inline" style={{ fontSize: "0.85rem" }}>
+                {user?.name || "User"}
+              </span>
             </Dropdown.Toggle>
             <Dropdown.Menu className="shadow-lg border-0 mt-2" style={{ borderRadius: "10px" }}>
-              <Dropdown.Item onClick={() => history.push("/dashboard/ProfileAkunKlien")}>Profil Akun</Dropdown.Item>
-              <Dropdown.Item className="text-danger" onClick={() => setShowLogout(true)}>Logout</Dropdown.Item>
+              <Dropdown.Item className="py-2" onClick={() => history.push("/dashboard/ProfileAkunKlien")}>
+                <i className="bi bi-person me-2"></i> Profil Akun
+              </Dropdown.Item>
+              <hr className="dropdown-divider opacity-50" />
+              <Dropdown.Item className="py-2 text-danger" onClick={() => setShowLogout(true)}>
+                <i className="bi bi-box-arrow-right me-2"></i> Logout
+              </Dropdown.Item>
             </Dropdown.Menu>
           </Dropdown>
         </div>
@@ -169,15 +200,32 @@ function NavbarLogin({ children }) {
       <aside className={`dashboard-sidebar bg-white p-3 shadow-sm ${sidebarOpen ? "open" : ""}`}>
         <Nav className="flex-column mt-2">
           {menus.map((menu) => (
-            <Nav.Link key={menu.key} onClick={() => { setActiveMenu(menu.key); history.push(`/dashboard/${menu.key}`); setSidebarOpen(false); }} className={`d-flex align-items-center mb-2 py-2 px-3 rounded ${activeMenu === menu.key ? "active" : ""}`}>
-              <span className="me-3">{menu.icon}</span>{menu.label}
+            <Nav.Link
+              key={menu.key}
+              onClick={() => {
+                setActiveMenu(menu.key);
+                history.push(`/dashboard/${menu.key}`);
+                setSidebarOpen(false);
+              }}
+              className={`d-flex align-items-center mb-2 py-2 px-3 rounded ${activeMenu === menu.key ? "active" : ""}`}
+              style={{
+                color: "#000",
+                fontSize: "0.95rem",
+                transition: "background 0.3s, color 0.3s",
+                cursor: "pointer",
+              }}
+            >
+              <span className="me-3">{menu.icon}</span>
+              {menu.label}
             </Nav.Link>
           ))}
         </Nav>
       </aside>
 
       <main className="dashboard-content">
-        <div className="page-title-bar"><h5 className="m-0 px-4 py-2">{currentTitle}</h5></div>
+        <div className="page-title-bar">
+          <h5 className="m-0 px-4 py-2">{currentTitle}</h5>
+        </div>
         <div className="dashboard-inner">{children}</div>
       </main>
 
@@ -191,7 +239,16 @@ function NavbarLogin({ children }) {
         @media (min-width: 992px) { .dashboard-sidebar { transform: translateX(0); } .dashboard-content { margin-left: 240px; } }
       `}</style>
 
-      <ConfirmModal show={showLogout} title="Konfirmasi Logout" message="Anda yakin ingin keluar?" onConfirm={() => { handleLogout(); setShowLogout(false); }} onCancel={() => setShowLogout(false)} />
+      <ConfirmModal
+        show={showLogout}
+        title="Konfirmasi Logout"
+        message="Anda yakin ingin keluar?"
+        onConfirm={() => {
+          handleLogout();
+          setShowLogout(false);
+        }}
+        onCancel={() => setShowLogout(false)}
+      />
     </div>
   );
 }

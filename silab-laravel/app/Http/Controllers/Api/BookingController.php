@@ -860,7 +860,7 @@ class BookingController extends Controller
 
                 // Ensure directory exists
                 Storage::disk('public')->makeDirectory('hasil_pdfs');
-                $path = $file->store('hasil_pdfs', 'public');
+                $path = $file->store('hasil_pdfs', 's3');
                 Log::info('Stored uploaded PDF to: ' . $path);
             } else if ($request->pdf) {
                 // Fallback: simpan file dari stream jika tidak terdeteksi sebagai file upload
@@ -1151,7 +1151,7 @@ class BookingController extends Controller
         if ($request->hasFile('file')) {
             try {
                 $file = $request->file('file');
-                $path = $file->store('payment_proofs', 'public');
+                $path = $file->store('payment_proofs', 's3');
 
                 $booking->payment_proof_path = $path;
                 // Use existing booking status to avoid enum/truncation issues

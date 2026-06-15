@@ -120,72 +120,6 @@ const PembayaranKlien = () => {
     }
   };
 
-  // --- HANDLER INTEGRASI UNGHAHAN BARU (MINGGU 3) ---
-  const handleProfileUpload = async (file) => {
-    if (!file) return;
-    setUploading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}`, Accept: "application/json" } : { Accept: "application/json" };
-      const fd = new FormData();
-      fd.append("foto_profil", file);
-
-      const res = await fetch(`${apiBase}/profile/update`, {
-        method: "POST",
-        headers,
-        body: fd,
-      });
-
-      if (res.ok) {
-        alert("Foto profil berhasil diperbarui di Cloud S3!");
-        setSelectedProfileFile(null);
-      } else {
-        alert("Gagal memperbarui foto profil.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Terjadi kesalahan sistem.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handlePdfUpload = async (file) => {
-    if (!file) return;
-    const id = detailBooking ? detailBooking.id : new URLSearchParams(window.location.search).get("bookingId");
-    if (!id) {
-      alert("Silakan pilih salah satu kode batch pesanan terlebih dahulu!");
-      return;
-    }
-    setUploading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const headers = token ? { Authorization: `Bearer ${token}`, Accept: "application/json" } : { Accept: "application/json" };
-      const fd = new FormData();
-      fd.append("dokumen_pdf", file);
-
-      const res = await fetch(`${apiBase}/bookings/${id}/upload-pdf`, {
-        method: "POST",
-        headers,
-        body: fd,
-      });
-
-      if (res.ok) {
-        alert("Dokumen PDF Hasil Lab sukses dikirim ke S3!");
-        setSelectedPdfFile(null);
-        const json = await res.json();
-        if (json.data) setDetailBooking(json.data);
-      } else {
-        alert("Gagal mengunggah dokumen PDF.");
-      }
-    } catch (err) {
-      console.error(err);
-      alert("Terjadi kesalahan sistem.");
-    } finally {
-      setUploading(false);
-    }
-  };
-
   // --- EFFECT: Load Awal & Polling List Pending ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -279,42 +213,18 @@ const PembayaranKlien = () => {
     <NavbarLogin>
       <div className="container-fluid min-vh-100 py-5" style={{ backgroundColor: "#F8F9FA" }}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mx-auto bg-white shadow-sm border" style={{ maxWidth: "500px", borderRadius: "24px", overflow: "hidden" }}>
-          
           {/* Header */}
           <div className="p-4 text-center border-bottom bg-white">
             <h4 className="fw-bold mb-1">Pusat Unggah Berkas</h4>
             <p className="text-muted small mb-0">Manajemen berkas digital layanan SILAB-NTDK</p>
           </div>
 
-          {/* Tabs Navigation Switcher (Minggu 3) */}
-          <div className="d-flex border-bottom bg-light">
-            <button 
-              className={`flex-fill py-3 border-0 fw-semibold small transition-all ${activeTab === "payment" ? "bg-white border-bottom border-2 border-dark text-dark" : "text-muted bg-light"}`}
-              onClick={() => setActiveTab("payment")}
-            >
-              <Wallet size={16} className="me-2 d-inline" /> Pembayaran
-            </button>
-            <button 
-              className={`flex-fill py-3 border-0 fw-semibold small transition-all ${activeTab === "profile" ? "bg-white border-bottom border-2 border-dark text-dark" : "text-muted bg-light"}`}
-              onClick={() => setActiveTab("profile")}
-            >
-              <User size={16} className="me-2 d-inline" /> Foto Profil
-            </button>
-            <button 
-              className={`flex-fill py-3 border-0 fw-semibold small transition-all ${activeTab === "pdf" ? "bg-white border-bottom border-2 border-dark text-dark" : "text-muted bg-light"}`}
-              onClick={() => setActiveTab("pdf")}
-            >
-              <FileText size={16} className="me-2 d-inline" /> Dokumen PDF
-            </button>
-          </div>
-
           <div className="p-4">
-            
             {/* =========================================================================
                 TAB 1: PEMBAYARAN & BUKTI TRANSFER
                 ========================================================================= */}
-            {activeTab === "payment" && (
-              !detailBooking ? (
+            {activeTab === "payment" &&
+              (!detailBooking ? (
                 <div className="d-flex flex-column gap-3">
                   <p className="text-muted small mb-0 text-center">Pilih transaksi aktif untuk melihat tagihan Virtual Account:</p>
                   {pendingBookings.length === 0 ? (
@@ -324,7 +234,7 @@ const PembayaranKlien = () => {
                       <div key={b.id} onClick={() => fetchInvoiceForBooking(b.id)} className="p-3 border rounded-4 d-flex justify-content-between align-items-center cursor-pointer hover-effect" style={{ cursor: "pointer" }}>
                         <div>
                           <div className="fw-bold">{b.kode_batch || `Order #${b.id}`}</div>
-                          <div className="text-muted small text-capitalize">{b.status?.replace(/_/g, ' ')}</div>
+                          <div className="text-muted small text-capitalize">{b.status?.replace(/_/g, " ")}</div>
                         </div>
                         <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold">Detail</button>
                       </div>
@@ -336,19 +246,29 @@ const PembayaranKlien = () => {
                   {/* Stepper */}
                   <div className="d-flex align-items-center justify-content-center mb-5 mt-2 position-relative">
                     <div className="d-flex flex-column align-items-center z-1">
-                      <div className="rounded-circle d-flex align-items-center justify-content-center border" style={{ width: "50px", height: "50px", backgroundColor: paymentSuccess ? "#E9ECEF" : "#7D6E66", color: paymentSuccess ? "#ADB5BD" : "#FFF" }}>
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center border"
+                        style={{ width: "50px", height: "50px", backgroundColor: paymentSuccess ? "#E9ECEF" : "#7D6E66", color: paymentSuccess ? "#ADB5BD" : "#FFF" }}
+                      >
                         <Clock size={24} />
                       </div>
-                      <span className="small mt-2 fw-bold" style={{ color: paymentSuccess ? "#ADB5BD" : "#7D6E66" }}>Menunggu</span>
+                      <span className="small mt-2 fw-bold" style={{ color: paymentSuccess ? "#ADB5BD" : "#7D6E66" }}>
+                        Menunggu
+                      </span>
                     </div>
                     <div className="flex-grow-1 mx-2" style={{ height: "4px", backgroundColor: "#E9ECEF", maxWidth: "80px", marginTop: "-25px" }}>
                       <div style={{ width: paymentSuccess ? "100%" : "50%", height: "100%", backgroundColor: "#7D6E66" }}></div>
                     </div>
                     <div className="d-flex flex-column align-items-center z-1">
-                      <div className="rounded-circle d-flex align-items-center justify-content-center border" style={{ width: "50px", height: "50px", backgroundColor: paymentSuccess ? "#7D6E66" : "#E9ECEF", color: paymentSuccess ? "#FFF" : "#ADB5BD" }}>
+                      <div
+                        className="rounded-circle d-flex align-items-center justify-content-center border"
+                        style={{ width: "50px", height: "50px", backgroundColor: paymentSuccess ? "#7D6E66" : "#E9ECEF", color: paymentSuccess ? "#FFF" : "#ADB5BD" }}
+                      >
                         <CheckCircle size={24} />
                       </div>
-                      <span className="small mt-2 fw-bold" style={{ color: paymentSuccess ? "#7D6E66" : "#ADB5BD" }}>Berhasil</span>
+                      <span className="small mt-2 fw-bold" style={{ color: paymentSuccess ? "#7D6E66" : "#ADB5BD" }}>
+                        Berhasil
+                      </span>
                     </div>
                   </div>
 
@@ -356,13 +276,17 @@ const PembayaranKlien = () => {
                   <div className="border rounded-4 p-4 mb-4 text-start">
                     <div className="d-flex justify-content-between align-items-center mb-3">
                       <span className="text-muted fw-bold small">Nomor Virtual Account</span>
-                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
                         <Building size={18} />
-                        <span className="small fw-bold" style={{ fontSize: 12 }}>BNI</span>
+                        <span className="small fw-bold" style={{ fontSize: 12 }}>
+                          BNI
+                        </span>
                       </div>
                     </div>
                     <div className="bg-light p-3 rounded-3 d-flex justify-content-between align-items-center border">
-                      <span className="fs-4 fw-bold letter-spacing-2" style={{ letterSpacing: "3px" }}>{data.vaNumber}</span>
+                      <span className="fs-4 fw-bold letter-spacing-2" style={{ letterSpacing: "3px" }}>
+                        {data.vaNumber}
+                      </span>
                       <Copy size={20} className="text-muted cursor-pointer" onClick={copyToClipboard} />
                     </div>
                   </div>
@@ -390,10 +314,59 @@ const PembayaranKlien = () => {
                         <CheckCircle size={18} className="text-success" />
                         <div className="text-start">
                           <div className="small fw-bold">Bukti Pembayaran</div>
-                          <div className="text-muted" style={{ fontSize: "10px" }}>Telah diunggah ke S3</div>
+                          <div className="text-muted" style={{ fontSize: "10px" }}>
+                            Telah diunggah
+                          </div>
                         </div>
                       </div>
-                      <a href={`${apiHost}/storage/${detailBooking?.payment_proof_path || invoiceProofPath}`} target="_blank" rel="noreferrer" className="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold" style={{ fontSize: "12px" }}>Lihat Bukti</a>
+                      {(() => {
+                        const rawPath = detailBooking?.payment_proof_path || invoiceProofPath;
+                        if (!rawPath) return null;
+
+                        // Jika backend mengirim URL full
+                        if (String(rawPath).startsWith("http") || String(rawPath).startsWith("blob")) {
+                          return (
+                            <a
+                              href={rawPath}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold"
+                              style={{ fontSize: "12px" }}
+                            >
+                              Lihat Bukti
+                            </a>
+                          );
+                        }
+
+                        // Jika rawPath adalah key S3 (contoh: payment_proofs/xxx.jpg), gunakan host S3
+                        const s3Host = "https://silab-ntdk-storage.s3.ap-southeast-1.amazonaws.com";
+                        if (rawPath.includes("/")) {
+                          return (
+                            <a
+                              href={`${s3Host}/${rawPath}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold"
+                              style={{ fontSize: "12px" }}
+                            >
+                              Lihat Bukti
+                            </a>
+                          );
+                        }
+
+                        // Fallback ke route server
+                        return (
+                          <a
+                            href={`${apiHost}/storage/${rawPath}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-bold"
+                            style={{ fontSize: "12px" }}
+                          >
+                            Lihat Bukti
+                          </a>
+                        );
+                      })()}
                     </div>
                   )}
 
@@ -412,6 +385,7 @@ const PembayaranKlien = () => {
                             const token = localStorage.getItem("token");
                             const headers = token ? { Authorization: `Bearer ${token}`, Accept: "application/json" } : { Accept: "application/json" };
                             const fd = new FormData();
+                            // field name harus sesuai backend: uploadPaymentProof() validasi 'file'
                             fd.append("file", selectedFile);
                             const id = detailBooking ? detailBooking.id : new URLSearchParams(window.location.search).get("bookingId");
                             const res = await fetch(`${apiBase}/bookings/${id}/upload-payment-proof`, { method: "POST", headers, body: fd });
@@ -432,10 +406,23 @@ const PembayaranKlien = () => {
                         }
                       }}
                     >
-                      {uploading ? <>Tunggu sebentar...</> : alreadyUploaded ? <>Bukti Sudah Terkirim</> : selectedFile ? <><CheckCircle size={20} /> Kirim Bukti Sekarang</> : <><Upload size={20} /> Unggah Bukti Pembayaran</>}
+                      {uploading ? (
+                        <>Tunggu sebentar...</>
+                      ) : alreadyUploaded ? (
+                        <>Bukti Sudah Terkirim</>
+                      ) : selectedFile ? (
+                        <>
+                          <CheckCircle size={20} /> Kirim Bukti Sekarang
+                        </>
+                      ) : (
+                        <>
+                          <Upload size={20} /> Unggah Bukti Pembayaran
+                        </>
+                      )}
                     </button>
+
                     <input type="file" id="file-upload" hidden accept="image/*" onChange={(e) => setSelectedFile(e.target.files[0])} />
-                    
+
                     {selectedFile && <div className="text-success small fw-bold mt-1">✓ File siap kirim: {selectedFile.name}</div>}
 
                     <button className="btn btn-light py-3 border-0 fw-bold d-flex align-items-center justify-content-center gap-2" style={{ borderRadius: "14px", color: "#666" }} onClick={() => fetchInvoiceForBooking(detailBooking?.id)}>
@@ -447,105 +434,7 @@ const PembayaranKlien = () => {
                     Kembali ke daftar pesanan
                   </button>
                 </div>
-              )
-            )}
-
-            {/* =========================================================================
-                TAB 2: FOTO PROFIL (MINGGU 3)
-                ========================================================================= */}
-            {activeTab === "profile" && (
-              <div className="text-center py-3">
-                <div className="mb-4">
-                  <div className="d-inline-flex align-items-center justify-content-center shadow-sm bg-light rounded-circle" style={{ width: 110, height: 110, color: theme.primary }}>
-                    <User size={48} />
-                  </div>
-                </div>
-                <h5 className="fw-bold mb-2">Perbarui Foto Profil</h5>
-                <p className="text-muted small mb-4">Pilih file gambar berformat JPG, JPEG, atau PNG (Maksimal 1MB)</p>
-                
-                <div className="d-grid gap-2">
-                  <button
-                    className="btn Restoration-Button py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
-                    style={{ backgroundColor: selectedProfileFile ? "#28a745" : "#7D766B", color: "#FFF", borderRadius: "14px", border: "none" }}
-                    disabled={uploading}
-                    onClick={() => {
-                      if (!selectedProfileFile) {
-                        document.getElementById("profile-file-upload").click();
-                      } else {
-                        handleProfileUpload(selectedProfileFile);
-                      }
-                    }}
-                  >
-                    {uploading ? "Mengirim ke S3..." : selectedProfileFile ? <><CheckCircle size={20} /> Simpan Foto Profil Sekarang</> : <><Upload size={20} /> Pilih Foto Profil</>}
-                  </button>
-                  <input type="file" id="profile-file-upload" hidden accept="image/*" onChange={(e) => setSelectedProfileFile(e.target.files[0])} />
-                  
-                  {selectedProfileFile && (
-                    <span className="text-success small fw-semibold mt-1">✓ Berkas terpilih: {selectedProfileFile.name}</span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* =========================================================================
-                TAB 3: DOKUMEN PDF (MINGGU 3)
-                ========================================================================= */}
-            {activeTab === "pdf" && (
-              <div className="text-center py-2">
-                {!detailBooking ? (
-                  <div className="d-flex flex-column gap-3">
-                    <p className="text-muted small mb-1">Silakan pilih batch pesanan untuk menyematkan berkas PDF hasil lab:</p>
-                    {pendingBookings.map((b) => (
-                      <div key={b.id} onClick={() => { setDetailBooking(b); fetchInvoiceForBooking(b.id, false); }} className="p-3 border rounded-4 d-flex justify-content-between align-items-center cursor-pointer hover-effect" style={{ cursor: "pointer" }}>
-                        <div>
-                          <div className="fw-bold">{b.kode_batch || `Order #${b.id}`}</div>
-                          <div className="text-muted small text-capitalize">{b.status?.replace(/_/g, ' ')}</div>
-                        </div>
-                        <button className="btn btn-light btn-sm rounded-pill px-3 fw-bold">Pilih</button>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div>
-                    <div className="mb-4">
-                      <div className="d-inline-flex align-items-center justify-content-center shadow-sm bg-light rounded-circle" style={{ width: 110, height: 110, color: theme.primary }}>
-                        <FileText size={46} />
-                      </div>
-                    </div>
-                    <h5 className="fw-bold mb-1">Unggah PDF Hasil Lab</h5>
-                    <p className="text-muted small mb-2">Batch: <span className="fw-bold text-dark">{detailBooking.kode_batch || `#${detailBooking.id}`}</span></p>
-                    <p className="text-muted small mb-4">Berkas wajib bertipe dokumen PDF asli (Maksimal 5MB)</p>
-                    
-                    <div className="d-grid gap-2">
-                      <button
-                        className="btn py-3 fw-bold shadow-sm d-flex align-items-center justify-content-center gap-2"
-                        style={{ backgroundColor: selectedPdfFile ? "#28a745" : "#483D3F", color: "#FFF", borderRadius: "14px", border: "none" }}
-                        disabled={uploading}
-                        onClick={() => {
-                          if (!selectedPdfFile) {
-                            document.getElementById("pdf-file-upload").click();
-                          } else {
-                            handlePdfUpload(selectedPdfFile);
-                          }
-                        }}
-                      >
-                        {uploading ? "Mengirim ke S3..." : selectedPdfFile ? <><CheckCircle size={20} /> Kirim Dokumen PDF Sekarang</> : <><Upload size={20} /> Pilih Berkas PDF</>}
-                      </button>
-                      <input type="file" id="pdf-file-upload" hidden accept="application/pdf" onChange={(e) => setSelectedPdfFile(e.target.files[0])} />
-                      
-                      {selectedPdfFile && (
-                        <span className="text-success small fw-semibold mt-1">✓ Berkas terpilih: {selectedPdfFile.name}</span>
-                      )}
-                    </div>
-
-                    <button className="btn btn-link text-muted small mt-4 text-decoration-none" onClick={handleBackToList}>
-                      Kembali ke daftar pesanan
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-
+              ))}
           </div>
         </motion.div>
       </div>

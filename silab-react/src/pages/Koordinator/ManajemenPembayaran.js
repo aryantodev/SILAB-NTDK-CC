@@ -1130,7 +1130,7 @@ const ManajemenPembayaran = () => {
                       const apiBaseRoot = (process.env.REACT_APP_API_BASE_URL || "http://127.0.0.1:8000/api").replace(/\/api\/?$/, "");
                       const path = selectedInvoice.payment_proof_path || (selectedInvoice.booking && selectedInvoice.booking.payment_proof_path);
                       if (!path) return alert("Tidak ada bukti pembayaran untuk ditampilkan.");
-                      const full = `${apiBaseRoot}/storage/${path}`;
+		      const full = `https://silab-ntdk-storage.s3.ap-southeast-1.amazonaws.com/${path}`;
                       try {
                         console.debug("Fetching proof via:", full);
                         const res = await fetch(full);
@@ -1317,7 +1317,7 @@ const ManajemenPembayaran = () => {
           <Modal.Title style={{ color: "#198754" }}>
             <i className="bi bi-check-circle me-2"></i>Konfirmasi Pembayaran
           </Modal.Title>
-        </Modal.Header>
+ 	       </Modal.Header>
         <Modal.Body className="p-4">
           <div className="text-center mb-3">
             <i className="bi bi-question-circle" style={{ fontSize: "3rem", color: "#198754" }}></i>

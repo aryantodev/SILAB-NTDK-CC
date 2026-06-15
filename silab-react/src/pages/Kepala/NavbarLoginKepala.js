@@ -3,6 +3,7 @@ import { Image, Nav, Dropdown, Badge } from "react-bootstrap";
 import { useHistory, useLocation } from "react-router-dom";
 import { FaTachometerAlt, FaClipboardCheck, FaChartLine, FaFileAlt, FaCog, FaBars, FaTimes, FaUserCircle, FaBell } from "react-icons/fa";
 import { getUnreadNotifications, markNotificationAsRead, markAllNotificationsAsRead } from "../../services/NotificationService";
+import axios from "axios";
 import "@fontsource/poppins";
 import ConfirmModal from "../../components/Common/ConfirmModal";
 
@@ -18,8 +19,28 @@ function NavbarLoginKepala({ children }) {
   const [showNotifDropdown, setShowNotifDropdown] = useState(false);
 
   useEffect(() => {
+    // Prefer ambil dari localStorage (cepat)
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser) setUser(storedUser);
+
+    // Tapi untuk memastikan avatar tampil, sinkronkan ulang dari backend pakai token
+    const token = localStorage.getItem("token");
+    if (!token) return;
+
+    axios
+      .get("http://52.77.226.138:8000/api/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => {
+        if (res?.data?.user) {
+          setUser(res.data.user);
+          // Update localStorage agar komponen lain ikut konsisten
+          localStorage.setItem("user", JSON.stringify(res.data.user));
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to sync user in NavbarLoginKepala:", err);
+      });
   }, []);
 
   // Fetch notifications dengan polling
@@ -94,7 +115,16 @@ function NavbarLoginKepala({ children }) {
 
   const [showLogout, setShowLogout] = useState(false);
 
-  const avatarSrc = user?.avatar ? (user.avatar.startsWith("http") || user.avatar.startsWith("blob") ? user.avatar : `http://52.77.226.138:8000/storage/${user.avatar}`) : null;
+  const avatarSrc = (() => {
+    if (!user) return null;
+
+    if (user.avatar_url) return user.avatar_url;
+    if (user.avatar && (user.avatar.startsWith("http") || user.avatar.startsWith("blob"))) return user.avatar;
+
+    if (user.avatar) return `https://silab-ntdk-storage.ap-southeast-1.amazonaws.com/${user.avatar}`;
+
+    return null;
+  })();
 
   return (
     <div className="dashboard-layout" style={{ fontFamily: "Poppins, sans-serif" }}>
